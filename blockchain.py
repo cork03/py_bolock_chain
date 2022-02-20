@@ -113,4 +113,4 @@ if __name__ == '__main__':
 
     print('my', block_chain.calculate_total_amount(my_blockchain_address))
     print('C', block_chain.calculate_total_amount('C'))
-    print('D', block_chain.calculate_total_amount('D'))
+    print('D', block_chain.calculate_total_amount('D')) 
