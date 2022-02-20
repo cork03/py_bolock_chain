@@ -7,15 +7,19 @@ import time
 import utils
 
 MINING_DIFFICULTY = 3
+MINING_SENDER = 'THE BLOCKCHAIN'
+MINING_REWARD = 1.0
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+logger = logging.getLogger(__name__)
 
 class BlockChain(object):
 
-    def __init__(self):
+    def __init__(self, blockchain_address=None):
         self.transaction_pool = []
         self.chain = []
         self.create_block(0, self.hash({}))
+        self.blockchain_address = blockchain_address
 
     def create_block(self, nonce, previous_hash):
         # ブロックの中身
@@ -65,25 +69,33 @@ class BlockChain(object):
             nonce += 1
         return nonce
 
+    def mining(self):
+        # ブロックチェーンネットワークがマイナーに対してvalueを付与している部分
+        self.add_transaction(
+            sender_blockchain_address=MINING_SENDER,
+            recipient_blockchain_address=self.blockchain_address,
+            value=MINING_REWARD
+        )
+        # 本来はproof_of_workに10分かかるように設計する
+        nonce = self.proof_of_work()
+        # 一個前のブロックを使ったハッシュ値
+        previous_hash = self.hash(self.chain[-1])
+        self.create_block(nonce, previous_hash)
+        logger.info({'action': 'mining', 'status': 'success'})
+        return True
+
 if __name__ == '__main__':
-    block_chain = BlockChain()
+    my_blockchain_address = 'my_block_chain_address'
+    block_chain = BlockChain(blockchain_address=my_blockchain_address)
     utils.pprint(block_chain.chain)
 
     # トランザクションプールにトランザクションの追加R
     block_chain.add_transaction('A', 'B', 1.0)
-    # 一個前のブロックを使ったハッシュ値
-    previous_hash = block_chain.hash(block_chain.chain[-1])
-    # 本来はproof_of_workに10分かかるように設計する
-    nonce = block_chain.proof_of_work()
-    block_chain.create_block(nonce, previous_hash)
+    block_chain.mining()
     utils.pprint(block_chain.chain)
 
     # トランザクションの追加
     block_chain.add_transaction('C', 'D', 2.0)
     block_chain.add_transaction('X', 'Y', 5.0)
-    # 一個前のブロックを使ったハッシュ値
-    previous_hash = block_chain.hash(block_chain.chain[-1])
-    # 本来はproof_of_workに10分かかるように設計する
-    nonce = block_chain.proof_of_work()
-    block_chain.create_block(nonce, previous_hash)
+    block_chain.mining()
     utils.pprint(block_chain.chain)
