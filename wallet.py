@@ -1,11 +1,12 @@
 import binascii
-
 import base58
 import codecs
 import hashlib
 
 from ecdsa import NIST256p
 from ecdsa import SigningKey
+
+import utils
 
 class Wallet(object):
 
@@ -56,10 +57,46 @@ class Wallet(object):
         blockchain_address = base58.b58encode(binascii.unhexlify(address_hex)).decode('utf-8')
         return blockchain_address
 
+class Transaction(object):
+
+    def __init__(self, sender_private_key, sender_public_key,
+                 sender_blockchain_address, recipient_blockchain_address,
+                 value):
+        self.sender_private_key = sender_private_key
+        self.sender_public_key = sender_public_key
+        self.sender_blockchain_address = sender_blockchain_address
+        self.recipient_blockchain_address = recipient_blockchain_address
+        self.value = value
+
+    def generate_signature(self):
+        sha256 = hashlib.sha256()
+        transaction = utils.sorted_dict_by_key({
+            'sender_blockchain_address': self.sender_blockchain_address,
+            'recipient_blockchain_address': self.recipient_blockchain_address,
+            'value': self.value,
+        })
+
+        # トランザクションを秘密鍵で暗号化
+        sha256.update(str(transaction).encode('utf-8'))
+        message = sha256.digest()
+        private_key = SigningKey.from_string(
+            bytes().fromhex(self.sender_private_key), curve=NIST256p
+        )
+        private_key_sign = private_key.sign(message)
+        signature = private_key_sign.hex()
+
+        return signature
+
 if __name__ == '__main__':
     wallet = Wallet()
     print(wallet.private_key)
     print(wallet.public_key)
+    # 秘密鍵と公開鍵で暗号化したアドレス
     print(wallet.blockchain_address)
+    transaction = Transaction(
+        wallet.private_key, wallet.private_key, wallet.blockchain_address,
+        'B', 1.0
+    )
+    print(transaction.generate_signature())
 
 
